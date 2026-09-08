@@ -2,7 +2,7 @@
 	import { pillars } from '$lib/data/site';
 </script>
 
-<section id="focus" class="section-cinematic scroll-mt-24 px-5 py-20 sm:px-8 sm:py-28 lg:px-12" aria-labelledby="focus-heading">
+<section id="focus" class="scroll-mt-24 px-5 py-20 sm:px-8 sm:py-28 lg:px-12" aria-labelledby="focus-heading">
 	<div class="mx-auto max-w-5xl">
 		<header class="max-w-2xl">
 			<h2 id="focus-heading" class="font-display text-3xl tracking-tight text-ink sm:text-4xl">

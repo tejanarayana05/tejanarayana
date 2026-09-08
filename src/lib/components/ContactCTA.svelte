@@ -6,7 +6,7 @@
 
 <section
 	id="contact"
-	class="section-cinematic scroll-mt-24 px-5 py-20 sm:px-8 sm:py-28 lg:px-12"
+	class="scroll-mt-24 px-5 py-20 sm:px-8 sm:py-28 lg:px-12"
 	aria-labelledby="contact-heading"
 >
 	<div class="mx-auto max-w-5xl border-t border-line pt-16 sm:pt-20">

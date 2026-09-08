@@ -1,7 +1,7 @@
 <script lang="ts">
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
-	import BlackHoleBackground from '$lib/components/BlackHoleBackground.svelte';
+	import CursorTrailBackground from '$lib/components/CursorTrailBackground.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import Nav from '$lib/components/Nav.svelte';
 	import { site } from '$lib/data/site';
@@ -30,7 +30,8 @@
 	<meta name="twitter:description" content={site.description} />
 </svelte:head>
 
-<BlackHoleBackground />
+<!-- Global neon tubes cursor trail — lives for every route/page -->
+<CursorTrailBackground />
 
 <div class="relative z-10">
 	<a
