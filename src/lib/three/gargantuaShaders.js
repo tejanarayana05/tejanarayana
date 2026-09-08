@@ -171,7 +171,9 @@ bool diskCross(vec3 a, vec3 b, vec3 rayDir,
   vec2 rp = qp.xz/qr;
 
   // turbulence: warp at 1.5x, inner detail, 22x streaks, lane mask
-  vec3 pc = vec3(rp.x*3.0, rp.y*3.0, qr*0.85);
+  // slow time drift so light lanes keep breathing while the disk rotates
+  float waveT = uTime * 0.18;
+  vec3 pc = vec3(rp.x*3.0, rp.y*3.0, qr*0.85 + waveT);
   vec3 warp = vec3(
     fbm(pc*1.5),
     fbm(pc*1.5 + vec3(5.2,1.3,2.8)),
@@ -179,10 +181,10 @@ bool diskCross(vec3 a, vec3 b, vec3 rayDir,
   float turb = fbm(pc*2.0 + warp*1.5);
   float innerDetail = 1.0 - smoothstep(4.0, 18.0, qr);
   turb = mix(0.50, turb*1.7, innerDetail);
-  float streakN = fbm(vec3(rp.x*22.0, rp.y*22.0, qr*1.4));
+  float streakN = fbm(vec3(rp.x*22.0, rp.y*22.0, qr*1.4 + waveT*0.7));
   // 22x streaks live in the inner disk; outer haze stays smooth
   float streak = mix(0.95, mix(0.55, 1.15, smoothstep(0.25, 0.85, streakN)), innerDetail);
-  float lane = fbm(vec3(rp.x*5.0, rp.y*5.0, qr*0.55) + warp*0.8);
+  float lane = fbm(vec3(rp.x*5.0, rp.y*5.0, qr*0.55 + waveT*0.45) + warp*0.8);
   float laneMask = mix(0.85, mix(0.50, 1.30, smoothstep(0.15, 0.80, lane)), innerDetail);
   // radial gain: inner disk fierce, outer disk a dim smooth haze
   float radialGain = mix(0.38, 1.0, innerDetail);
