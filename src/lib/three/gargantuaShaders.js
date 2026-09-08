@@ -74,10 +74,17 @@ float fbm(vec3 p){
 
 // ------------------------------------------------------ pseudo-blackbody ----
 vec3 blackbody(float t){
-  vec3 c = mix(vec3(0.55,0.06,0.01), vec3(1.00,0.42,0.10), smoothstep(0.00,0.55,t));
-  c = mix(c, vec3(1.00,0.86,0.55), smoothstep(0.50,1.05,t));
-  c = mix(c, vec3(0.85,0.92,1.25), smoothstep(1.05,1.90,t));
+  // deep ember → amber plasma → soft gold → pale blue-white
+  vec3 c = mix(vec3(0.42,0.04,0.02), vec3(1.00,0.38,0.08), smoothstep(0.00,0.45,t));
+  c = mix(c, vec3(1.00,0.72,0.32), smoothstep(0.40,0.85,t));
+  c = mix(c, vec3(1.00,0.92,0.72), smoothstep(0.80,1.25,t));
+  c = mix(c, vec3(0.78,0.88,1.20), smoothstep(1.20,1.95,t));
   return c;
+}
+
+// cool cosmic dust tint for outer nebula haze
+vec3 cosmicDust(float t){
+  return mix(vec3(0.18,0.08,0.32), vec3(0.55,0.28,0.42), smoothstep(0.0,1.0,t));
 }
 
 // ------------------------------------------------------------ star field ----
@@ -114,19 +121,31 @@ vec3 heroStars(vec3 d){
 vec3 milkyway(vec3 d){
   vec3 n = normalize(vec3(0.25,1.0,0.15));
   float w = dot(d,n);
-  float band = exp(-w*w*7.0);
-  vec3 p = d*2.6;
-  float cloud = fbm(p*1.4 + 5.2);
-  float dust  = fbm(p*2.3 + 9.1);
-  vec3 col = mix(vec3(0.04,0.07,0.20), vec3(0.42,0.24,0.52), smoothstep(0.25,0.85,cloud));
+  float band = exp(-w*w*6.2);
+  vec3 p = d*2.4;
+  float cloud = fbm(p*1.25 + 5.2);
+  float dust  = fbm(p*2.1 + 9.1);
+  float bloom = fbm(p*0.7 + vec3(2.1, uTime*0.015, 4.4));
+  vec3 col = mix(vec3(0.03,0.06,0.18), vec3(0.36,0.18,0.48), smoothstep(0.22,0.88,cloud));
+  col = mix(col, vec3(0.55,0.22,0.28), smoothstep(0.55,0.95,bloom)*0.45);
   col *= band;
-  col *= 1.0 - 0.62*smoothstep(0.45,0.85,dust);
-  col *= 1.15;
+  col *= 1.0 - 0.55*smoothstep(0.40,0.88,dust);
+  col *= 1.35;
   return col;
 }
+vec3 nebulaVeil(vec3 d){
+  // large soft nebula patches drifting slowly behind the hole
+  float n1 = fbm(d*1.8 + vec3(uTime*0.02, 0.4, 1.7));
+  float n2 = fbm(d*3.1 + vec3(2.2, uTime*0.015, -1.1));
+  float mask = smoothstep(0.42, 0.78, n1) * (0.55 + 0.45*n2);
+  vec3 warm = vec3(0.55,0.22,0.12);
+  vec3 cool = vec3(0.16,0.22,0.55);
+  return mix(cool, warm, n2) * mask * 0.22;
+}
 vec3 background(vec3 d){
-  vec3 col = uSkyFloor*vec3(0.10,0.13,0.28);
+  vec3 col = uSkyFloor*vec3(0.08,0.10,0.24);
   col += milkyway(d);
+  col += nebulaVeil(d);
   col += starLayer(d,  26.0, 0.952, layerRot(0.7,0.4), 120.0);
   col += starLayer(d,  47.0, 0.952, layerRot(2.1,1.1), 200.0);
   col += starLayer(d,  83.0, 0.952, layerRot(4.0,2.3), 320.0);
@@ -163,36 +182,44 @@ bool diskCross(vec3 a, vec3 b, vec3 rayDir,
   float flux = max(pow(x/3.0, -3.0)*(1.0 - sqrt(3.0/x)), 0.0);
   float temp = pow(flux*10.0, 0.25);
 
-  // seamless rotating pattern coords (rotate cartesian, never atan-sample)
-  float omega = uRotSign*1.1*uRotSpeed*pow(3.0/qr, 1.5);
+  // slow differential rotation — cinematic swirl, not racing lines
+  float omega = uRotSign*0.55*uRotSpeed*pow(3.0/qr, 1.15);
   float rot = omega*uTime;
   float ca = cos(rot), sa = sin(rot);
   vec3 qp = vec3(ca*q.x + sa*q.z, 0.0, -sa*q.x + ca*q.z);
   vec2 rp = qp.xz/qr;
 
-  // turbulence: warp at 1.5x, inner detail, 22x streaks, lane mask
-  // slow time drift so light lanes keep breathing while the disk rotates
-  float waveT = uTime * 0.18;
-  vec3 pc = vec3(rp.x*3.0, rp.y*3.0, qr*0.85 + waveT);
+  // soft domain-warped nebula clouds (large scale) instead of streak lanes
+  float breath = uTime * 0.08;
+  vec3 base = vec3(rp.x*1.55, rp.y*1.55, qr*0.22 + breath);
   vec3 warp = vec3(
-    fbm(pc*1.5),
-    fbm(pc*1.5 + vec3(5.2,1.3,2.8)),
-    fbm(pc*1.5 + vec3(9.7,4.1,7.3)));
-  float turb = fbm(pc*2.0 + warp*1.5);
-  float innerDetail = 1.0 - smoothstep(4.0, 18.0, qr);
-  turb = mix(0.50, turb*1.7, innerDetail);
-  float streakN = fbm(vec3(rp.x*22.0, rp.y*22.0, qr*1.4 + waveT*0.7));
-  // 22x streaks live in the inner disk; outer haze stays smooth
-  float streak = mix(0.95, mix(0.55, 1.15, smoothstep(0.25, 0.85, streakN)), innerDetail);
-  float lane = fbm(vec3(rp.x*5.0, rp.y*5.0, qr*0.55 + waveT*0.45) + warp*0.8);
-  float laneMask = mix(0.85, mix(0.50, 1.30, smoothstep(0.15, 0.80, lane)), innerDetail);
-  // radial gain: inner disk fierce, outer disk a dim smooth haze
-  float radialGain = mix(0.38, 1.0, innerDetail);
-  turbDbg = turb;
+    fbm(base*0.9 + vec3(1.7, 0.2, breath*0.4)),
+    fbm(base*0.9 + vec3(4.1, 2.8, -breath*0.3)),
+    fbm(base*0.9 + vec3(7.2, -1.4, breath*0.2)));
+  float clouds = fbm(base*1.35 + warp*1.8);
+  float billow = fbm(base*2.4 + warp*1.1 + vec3(breath*0.6));
+  float wisps  = fbm(base*3.6 + vec3(warp.y, breath, warp.x));
 
-  float I = flux*11.0*turb*streak*laneMask*radialGain;
-  I += exp(-pow((qr-3.1)*3.0, 2.0))*2.8;              // inner glow
-  float outerFade = 1.0 - smoothstep(uDout-14.0, uDout, qr);
+  // broad spiral arms from low-frequency angular structure
+  float spiral = 0.5 + 0.5*sin(atan(rp.y, rp.x)*2.0 + qr*0.35 + warp.x*2.4 + breath*0.5);
+  spiral = smoothstep(0.25, 0.85, spiral);
+
+  float innerHot = 1.0 - smoothstep(3.2, 11.0, qr);
+  float outerSoft = smoothstep(8.0, 22.0, qr);
+
+  // soft plasma field — no high-frequency line streaks
+  float plasma = mix(0.62, 1.0, clouds);
+  plasma *= mix(0.85, 1.18, billow);
+  plasma *= mix(0.92, 1.08, wisps);
+  plasma *= mix(0.78, 1.22, spiral);
+  plasma = mix(plasma, 0.95 + 0.15*clouds, outerSoft);
+  turbDbg = plasma;
+
+  float radialGain = mix(0.55, 1.05, innerHot) * mix(1.0, 0.72, outerSoft);
+  float I = flux*9.2*plasma*radialGain;
+  I += exp(-pow((qr-3.15)*2.4, 2.0))*3.4;                 // soft ISCO bloom
+  I += exp(-pow((qr-6.5)*0.55, 2.0))*0.55*clouds;         // mid-disk glow pockets
+  float outerFade = 1.0 - smoothstep(uDout-16.0, uDout, qr);
   I *= outerFade;
 
   // relativistic beaming + gravitational redshift
@@ -203,8 +230,16 @@ bool diskCross(vec3 a, vec3 b, vec3 rayDir,
   dop = clamp(dop, 0.50, uDopMax);
   float g = sqrt(max(1.0 - RS/qr, 0.0));
 
-  vec3 dcol = blackbody(temp*dop*g) * I * (dop*dop*dop) * g * uDiskBright;
-  float alpha = mix(uOpFar, uOpNear, 1.0 - smoothstep(4.0, 13.0, qr)) * outerFade;
+  float tShade = temp*dop*g;
+  vec3 hot = blackbody(tShade);
+  vec3 dust = cosmicDust(clouds);
+  vec3 dcol = mix(hot, mix(hot, dust, 0.55), outerSoft*0.7);
+  dcol *= I * (dop*dop*dop) * g * uDiskBright;
+  // faint cool corona rim on the outer disk
+  dcol += dust * outerSoft * clouds * 0.35 * outerFade * uDiskBright;
+
+  float alpha = mix(uOpFar*0.88, uOpNear, 1.0 - smoothstep(4.0, 14.0, qr)) * outerFade;
+  alpha *= mix(0.9, 1.05, smoothstep(0.35, 0.8, plasma));
   col += trans * alpha * dcol;
   trans *= 1.0 - alpha;
   if(trans < 0.02){ trans = 0.0; return true; }
@@ -245,14 +280,21 @@ void main(){
 
     float dt = max(0.012, r*mix(0.02, 0.06, smoothstep(6.0, 20.0, r)));
 
-    // thin volumetric halo hugging the disk plane
+    // volumetric cosmic corona — thicker soft haze around the disk plane
     float absY = abs(pos.y);
-    if(absY < 0.45 && r > uDin && r < uDout){
-      float dens = exp(-absY*30.0)*0.03*(1.0 - smoothstep(10.0, uDout-1.0, r));
+    if(absY < 1.15 && r > uDin && r < uDout+2.0){
+      float sheet = exp(-absY*12.0);
+      float loft = exp(-absY*3.5)*0.35;
+      float dens = (sheet*0.045 + loft*0.02)*(1.0 - smoothstep(12.0, uDout+1.0, r));
       float xh = max(r, 3.001);
       float fluxh = max(pow(xh/3.0, -3.0)*(1.0 - sqrt(3.0/xh)), 0.0);
-      vec3 glowc = blackbody(pow(fluxh*10.0, 0.25)*0.9);
-      haloCol += trans * glowc * (fluxh*3.5) * dens * dt * uDiskBright;
+      float angH = atan(pos.z, pos.x);
+      float swirl = fbm(vec3(cos(angH)*1.2, sin(angH)*1.2, r*0.18 + uTime*0.05));
+      dens *= 0.7 + 0.6*swirl;
+      vec3 glowc = blackbody(pow(fluxh*10.0, 0.25)*0.85);
+      vec3 cool = cosmicDust(swirl);
+      vec3 haze = mix(glowc, cool, smoothstep(7.0, 18.0, r)*0.55);
+      haloCol += trans * haze * (fluxh*4.2 + 0.15) * dens * dt * uDiskBright;
     }
 
     if(r < 4.4){
@@ -296,8 +338,9 @@ void main(){
     col += haloCol * deep;
     bgAdd = trans * background(vel) * deep;
   }
-  // photon ring from the tracked perigee (thin critical curve, bloom-fed)
-  vec3 ringAdd = vec3(1.0,0.92,0.80) * exp(-pow((minR-1.55)*4.0, 2.0)) * 0.05;
+  // photon ring — soft critical curve feeding cinematic bloom
+  vec3 ringAdd = vec3(1.0,0.90,0.72) * exp(-pow((minR-1.55)*3.4, 2.0)) * 0.085;
+  ringAdd += vec3(0.75,0.55,1.05) * exp(-pow((minR-1.75)*2.2, 2.0)) * 0.025;
 
   vec3 outCol;
   if(uDebug == 1){                       // disk / halo only
