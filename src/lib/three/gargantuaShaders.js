@@ -74,17 +74,25 @@ float fbm(vec3 p){
 
 // ------------------------------------------------------ pseudo-blackbody ----
 vec3 blackbody(float t){
-  // deep ember → amber plasma → soft gold → pale blue-white
-  vec3 c = mix(vec3(0.42,0.04,0.02), vec3(1.00,0.38,0.08), smoothstep(0.00,0.45,t));
-  c = mix(c, vec3(1.00,0.72,0.32), smoothstep(0.40,0.85,t));
-  c = mix(c, vec3(1.00,0.92,0.72), smoothstep(0.80,1.25,t));
-  c = mix(c, vec3(0.78,0.88,1.20), smoothstep(1.20,1.95,t));
+  // wide, overlapping blends — photographic plasma, not posterized red bands
+  float u = clamp(t, 0.0, 2.2);
+  vec3 c0 = vec3(0.55, 0.14, 0.05);   // muted ember
+  vec3 c1 = vec3(0.92, 0.42, 0.16);   // soft copper
+  vec3 c2 = vec3(1.00, 0.68, 0.38);   // warm peach-gold
+  vec3 c3 = vec3(1.00, 0.86, 0.68);   // cream
+  vec3 c4 = vec3(0.88, 0.92, 1.05);   // pale blue-white
+  vec3 c = mix(c0, c1, smoothstep(0.00, 0.70, u));
+  c = mix(c, c2, smoothstep(0.35, 1.05, u));
+  c = mix(c, c3, smoothstep(0.75, 1.45, u));
+  c = mix(c, c4, smoothstep(1.20, 2.10, u));
   return c;
 }
 
-// cool cosmic dust tint for outer nebula haze
+// cool cosmic dust — desaturated so it melts into warm plasma
 vec3 cosmicDust(float t){
-  return mix(vec3(0.18,0.08,0.32), vec3(0.55,0.28,0.42), smoothstep(0.0,1.0,t));
+  vec3 cool = vec3(0.22, 0.16, 0.34);
+  vec3 rose = vec3(0.48, 0.30, 0.34);
+  return mix(cool, rose, smoothstep(0.0, 1.0, t));
 }
 
 // ------------------------------------------------------------ star field ----
@@ -137,10 +145,10 @@ vec3 nebulaVeil(vec3 d){
   // large soft nebula patches drifting slowly behind the hole
   float n1 = fbm(d*1.8 + vec3(uTime*0.02, 0.4, 1.7));
   float n2 = fbm(d*3.1 + vec3(2.2, uTime*0.015, -1.1));
-  float mask = smoothstep(0.42, 0.78, n1) * (0.55 + 0.45*n2);
-  vec3 warm = vec3(0.55,0.22,0.12);
-  vec3 cool = vec3(0.16,0.22,0.55);
-  return mix(cool, warm, n2) * mask * 0.22;
+  float mask = smoothstep(0.38, 0.82, n1) * (0.55 + 0.45*n2);
+  vec3 warm = vec3(0.48, 0.28, 0.18);
+  vec3 cool = vec3(0.18, 0.20, 0.42);
+  return mix(cool, warm, smoothstep(0.2, 0.85, n2)) * mask * 0.18;
 }
 vec3 background(vec3 d){
   vec3 col = uSkyFloor*vec3(0.08,0.10,0.24);
@@ -202,23 +210,24 @@ bool diskCross(vec3 a, vec3 b, vec3 rayDir,
 
   // broad spiral arms from low-frequency angular structure
   float spiral = 0.5 + 0.5*sin(atan(rp.y, rp.x)*2.0 + qr*0.35 + warp.x*2.4 + breath*0.5);
-  spiral = smoothstep(0.25, 0.85, spiral);
+  spiral = smoothstep(0.15, 0.90, spiral);
 
-  float innerHot = 1.0 - smoothstep(3.2, 11.0, qr);
-  float outerSoft = smoothstep(8.0, 22.0, qr);
+  float innerHot = 1.0 - smoothstep(3.2, 14.0, qr);
+  float midWarm = smoothstep(4.0, 10.0, qr) * (1.0 - smoothstep(12.0, 24.0, qr));
+  float outerSoft = smoothstep(7.0, 24.0, qr);
 
   // soft plasma field — no high-frequency line streaks
-  float plasma = mix(0.62, 1.0, clouds);
-  plasma *= mix(0.85, 1.18, billow);
-  plasma *= mix(0.92, 1.08, wisps);
-  plasma *= mix(0.78, 1.22, spiral);
-  plasma = mix(plasma, 0.95 + 0.15*clouds, outerSoft);
+  float plasma = mix(0.70, 1.0, clouds);
+  plasma *= mix(0.90, 1.10, billow);
+  plasma *= mix(0.95, 1.05, wisps);
+  plasma *= mix(0.88, 1.10, spiral);
+  plasma = mix(plasma, 0.96 + 0.12*clouds, outerSoft);
   turbDbg = plasma;
 
-  float radialGain = mix(0.55, 1.05, innerHot) * mix(1.0, 0.72, outerSoft);
+  float radialGain = mix(0.58, 1.02, innerHot) * mix(1.0, 0.74, outerSoft);
   float I = flux*7.4*plasma*radialGain;
-  I += exp(-pow((qr-3.15)*2.4, 2.0))*1.8;                 // soft ISCO bloom
-  I += exp(-pow((qr-6.5)*0.55, 2.0))*0.35*clouds;         // mid-disk glow pockets
+  I += exp(-pow((qr-3.15)*2.2, 2.0))*1.6;
+  I += exp(-pow((qr-6.5)*0.45, 2.0))*0.32*clouds;
   float outerFade = 1.0 - smoothstep(uDout-16.0, uDout, qr);
   I *= outerFade;
 
@@ -230,15 +239,24 @@ bool diskCross(vec3 a, vec3 b, vec3 rayDir,
   dop = clamp(dop, 0.55, uDopMax);
   float g = sqrt(max(1.0 - RS/qr, 0.0));
 
+  // temperature softly modulated by turbulence — colors smear instead of banding
   float tShade = temp*dop*g;
+  tShade *= mix(0.88, 1.08, clouds);
+  tShade *= mix(0.94, 1.04, billow);
+  tShade += midWarm * 0.08 * (0.5 + 0.5*wisps);
+
   vec3 hot = blackbody(tShade);
-  vec3 dust = cosmicDust(clouds);
-  vec3 dcol = mix(hot, mix(hot, dust, 0.55), outerSoft*0.7);
-  // milder beaming so the approaching side keeps structure (not blown white)
-  float beam = mix(1.0, dop*dop, 0.72);
+  vec3 dust = cosmicDust(mix(clouds, billow, 0.4));
+  // gradual warm→cool radial melt; turbulence cross-fades the blend
+  float dustMix = outerSoft * mix(0.35, 0.62, clouds);
+  vec3 dcol = mix(hot, mix(hot, dust, 0.45), dustMix);
+  // soft peach haze in the mid disk for natural transitions
+  vec3 peach = vec3(1.0, 0.74, 0.48);
+  dcol = mix(dcol, peach * (0.55 + 0.45*hot), midWarm * 0.18 * (1.0 - dustMix));
+
+  float beam = mix(1.0, dop*dop, 0.68);
   dcol *= I * beam * g * uDiskBright;
-  // faint cool corona rim on the outer disk
-  dcol += dust * outerSoft * clouds * 0.22 * outerFade * uDiskBright;
+  dcol += dust * outerSoft * clouds * 0.16 * outerFade * uDiskBright;
 
   float alpha = mix(uOpFar*0.88, uOpNear, 1.0 - smoothstep(4.0, 14.0, qr)) * outerFade;
   alpha *= mix(0.9, 1.05, smoothstep(0.35, 0.8, plasma));
