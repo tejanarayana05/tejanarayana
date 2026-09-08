@@ -6,7 +6,7 @@
 	class="hero relative isolate flex min-h-dvh flex-col justify-end overflow-hidden px-5 pb-16 pt-28 sm:justify-center sm:px-8 sm:pb-20 sm:pt-24 lg:px-12"
 	aria-labelledby="hero-brand"
 >
-	<!-- Full-bleed visual plane: soft field + SVG mesh -->
+	<!-- Full-bleed visual plane: soft field + SVG mesh + signal graph -->
 	<div class="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
 		<div class="hero-glow hero-glow--teal absolute -right-24 -top-16 h-[55vmax] w-[55vmax] rounded-full"></div>
 		<div class="hero-glow hero-glow--spark absolute -bottom-32 -left-20 h-[42vmax] w-[42vmax] rounded-full"></div>
@@ -31,6 +31,28 @@
 			</defs>
 			<rect width="100%" height="100%" fill="url(#hero-mesh)" />
 			<rect width="100%" height="100%" fill="url(#hero-fade)" />
+		</svg>
+		<svg
+			class="hero-graph absolute right-[-8%] top-[12%] hidden h-[70%] w-[58%] sm:block"
+			viewBox="0 0 640 520"
+			xmlns="http://www.w3.org/2000/svg"
+		>
+			<g fill="none" stroke="#0d9488" stroke-width="1.25" opacity="0.55">
+				<path d="M80 420 L220 300 L340 340 L460 180 L580 220" class="hero-path" />
+				<path d="M220 300 L260 160 L400 120" opacity="0.7" />
+				<path d="M340 340 L420 420 L540 380" opacity="0.55" />
+			</g>
+			<g fill="#0d9488">
+				<circle cx="80" cy="420" r="5" class="hero-node" />
+				<circle cx="220" cy="300" r="7" class="hero-node" />
+				<circle cx="340" cy="340" r="5" class="hero-node" />
+				<circle cx="460" cy="180" r="8" class="hero-node" />
+				<circle cx="580" cy="220" r="5" class="hero-node" />
+				<circle cx="260" cy="160" r="4" fill="#ea580c" class="hero-node" />
+				<circle cx="400" cy="120" r="5" fill="#ea580c" class="hero-node" />
+				<circle cx="420" cy="420" r="4" class="hero-node" />
+				<circle cx="540" cy="380" r="5" class="hero-node" />
+			</g>
 		</svg>
 	</div>
 
@@ -131,5 +153,42 @@
 		to {
 			transform: translate3d(-4%, 5%, 0) scale(1.08);
 		}
+	}
+
+	.hero-path {
+		stroke-dasharray: 12 10;
+		animation: dash 18s linear infinite;
+	}
+
+	.hero-node {
+		transform-box: fill-box;
+		transform-origin: center;
+		animation: pulse-node 3.6s ease-in-out infinite;
+	}
+
+	.hero-node:nth-child(odd) {
+		animation-delay: 0.6s;
+	}
+
+	@keyframes dash {
+		to {
+			stroke-dashoffset: -220;
+		}
+	}
+
+	@keyframes pulse-node {
+		0%,
+		100% {
+			opacity: 0.45;
+			transform: scale(1);
+		}
+		50% {
+			opacity: 1;
+			transform: scale(1.25);
+		}
+	}
+
+	.hero-graph {
+		animation: rise 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both;
 	}
 </style>

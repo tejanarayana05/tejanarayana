@@ -43,16 +43,14 @@ export const signals = [
 		id: 'gxco',
 		label: 'Now',
 		title: 'Product Engineer at GXCO',
-		detail:
-			'Translating client needs into practical, scalable product and engineering solutions.',
+		detail: 'Turning client needs into scalable product and engineering solutions.',
 		meta: 'May 2026'
 	},
 	{
 		id: 'ieee',
 		label: 'Research',
 		title: 'IEEE deep learning publication',
-		detail:
-			'Hybrid VGG19 + LSTM for brain tumor classification — strengthening the AI foundation behind the product work.',
+		detail: 'Hybrid VGG19 + LSTM for brain tumor classification.',
 		meta: 'Mar 2024',
 		href: 'https://ieeexplore.ieee.org/abstract/document/10467798'
 	},
@@ -60,8 +58,7 @@ export const signals = [
 		id: 'writing',
 		label: 'Writing',
 		title: 'Practical Python craft notes',
-		detail:
-			'Short, sharp articles on pathlib and Rich — tools that make everyday engineering cleaner.',
+		detail: 'Notes on pathlib and Rich — cleaner everyday engineering.',
 		meta: '2026',
 		href: 'https://www.aejt.in/writing'
 	}
