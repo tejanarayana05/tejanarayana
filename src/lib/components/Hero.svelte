@@ -13,7 +13,7 @@
 
 		<h1
 			id="hero-brand"
-			class="font-display text-[clamp(2.75rem,12vw,6.5rem)] leading-[0.92] tracking-tight text-ink text-balance"
+			class="font-display text-[clamp(2.75rem,12vw,6.5rem)] leading-[0.92] tracking-tight text-ink text-balance drop-shadow-[0_2px_24px_rgba(0,0,0,0.55)]"
 		>
 			{site.name}
 		</h1>
