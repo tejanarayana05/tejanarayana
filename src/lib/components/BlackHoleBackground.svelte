@@ -1,18 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { browser } from '$app/environment';
 	import type { BlackHoleEngine } from '$lib/three/blackHoleEngine';
 
 	let canvas: HTMLCanvasElement | undefined = $state();
 	let engine: BlackHoleEngine | null = null;
 	let failed = $state(false);
-
-	/** Zoom + orbit tracks the full page length — slow, not 2–3 wheel ticks. */
-	function syncScroll() {
-		if (!engine || !browser) return;
-		const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-		engine.setScrollProgress(window.scrollY / max);
-	}
 
 	onMount(() => {
 		if (!canvas) return;
@@ -23,7 +15,6 @@
 				const { createBlackHoleEngine } = await import('$lib/three/blackHoleEngine');
 				if (cancelled || !canvas) return;
 				engine = createBlackHoleEngine(canvas);
-				syncScroll();
 				engine.resize();
 			} catch (e) {
 				console.error(e);
@@ -31,19 +22,8 @@
 			}
 		})();
 
-		const onScroll = () => syncScroll();
-		const onResize = () => {
-			engine?.resize();
-			syncScroll();
-		};
-
-		window.addEventListener('scroll', onScroll, { passive: true });
-		window.addEventListener('resize', onResize);
-
 		return () => {
 			cancelled = true;
-			window.removeEventListener('scroll', onScroll);
-			window.removeEventListener('resize', onResize);
 			engine?.dispose();
 			engine = null;
 		};
@@ -54,6 +34,8 @@
 	{#if !failed}
 		<canvas bind:this={canvas} class="bh-canvas"></canvas>
 	{/if}
+	<!-- Permanent film / CRT morph veil from the GARGANTUA #fx layer -->
+	<div class="bh-fx"></div>
 	<div class="bh-veil"></div>
 </div>
 
@@ -73,12 +55,41 @@
 		height: 100%;
 	}
 
+	.bh-fx {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+		opacity: 0.55;
+		mix-blend-mode: screen;
+		background:
+			repeating-linear-gradient(
+				0deg,
+				rgba(255, 255, 255, 0.025) 0px,
+				rgba(255, 255, 255, 0.025) 1px,
+				transparent 1px,
+				transparent 3px
+			),
+			radial-gradient(ellipse at center, transparent 0%, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+	}
+
 	.bh-veil {
 		position: absolute;
 		inset: 0;
 		background:
-			radial-gradient(ellipse 75% 65% at 50% 45%, transparent 35%, rgba(0, 0, 0, 0.22) 100%),
-			linear-gradient(180deg, rgba(0, 0, 0, 0.12) 0%, transparent 28%, transparent 72%, rgba(0, 0, 0, 0.3) 100%);
+			radial-gradient(ellipse 78% 68% at 50% 45%, transparent 40%, rgba(0, 0, 0, 0.18) 100%),
+			linear-gradient(
+				180deg,
+				rgba(0, 0, 0, 0.1) 0%,
+				transparent 26%,
+				transparent 74%,
+				rgba(0, 0, 0, 0.28) 100%
+			);
 		pointer-events: none;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.bh-fx {
+			opacity: 0.35;
+		}
 	}
 </style>
