@@ -8,21 +8,21 @@ Built with **SvelteKit**, **Svelte 5**, and **Tailwind CSS v4**.
 
 ```bash
 npm install
-npm run dev -- --host 127.0.0.1 --port 43123
+npm run dev
 ```
 
-Open [http://127.0.0.1:43123](http://127.0.0.1:43123).
+Open [http://127.0.0.1:5173](http://127.0.0.1:5173) (Vite’s default port).
 
 ## Scripts
 
-| Command         | Description                    |
-| --------------- | ------------------------------ |
-| `npm run dev`   | Start the Vite dev server      |
-| `npm run build` | Production build               |
-| `npm run preview` | Preview the production build |
-| `npm run check` | Typecheck with svelte-check    |
-| `npm run lint`  | Prettier + ESLint              |
-| `npm run format`| Format with Prettier           |
+| Command           | Description                    |
+| ----------------- | ------------------------------ |
+| `npm run dev`     | Dev server on port **5173**    |
+| `npm run build`   | Production build               |
+| `npm run preview` | Preview build on port **4173** |
+| `npm run check`   | Typecheck with svelte-check    |
+| `npm run lint`    | Prettier + ESLint              |
+| `npm run format`  | Format with Prettier           |
 
 ## Stack
 
