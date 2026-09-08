@@ -7,10 +7,15 @@
 	let engine: BlackHoleEngine | null = null;
 	let failed = $state(false);
 
+	/**
+	 * Zoom completes over ~1.6 viewports of scroll so the close-up
+	 * reads clearly while browsing the landing page — not only at the footer.
+	 */
 	function syncScroll() {
 		if (!engine || !browser) return;
-		const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-		engine.setScrollProgress(window.scrollY / max);
+		const vh = Math.max(1, window.innerHeight);
+		const progress = window.scrollY / (vh * 1.6);
+		engine.setScrollProgress(Math.min(1, Math.max(0, progress)));
 	}
 
 	onMount(() => {
@@ -53,6 +58,7 @@
 	{#if !failed}
 		<canvas bind:this={canvas} class="bh-canvas"></canvas>
 	{/if}
+	<!-- Minimal edge vignette only — keep the event horizon visible -->
 	<div class="bh-veil"></div>
 </div>
 
@@ -76,7 +82,8 @@
 		position: absolute;
 		inset: 0;
 		background:
-			radial-gradient(ellipse 90% 70% at 70% 40%, transparent 0%, rgba(0, 0, 0, 0.35) 70%),
-			linear-gradient(180deg, rgba(0, 0, 0, 0.28) 0%, rgba(0, 0, 0, 0.45) 100%);
+			radial-gradient(ellipse 75% 65% at 50% 45%, transparent 35%, rgba(0, 0, 0, 0.22) 100%),
+			linear-gradient(180deg, rgba(0, 0, 0, 0.12) 0%, transparent 28%, transparent 72%, rgba(0, 0, 0, 0.3) 100%);
+		pointer-events: none;
 	}
 </style>
