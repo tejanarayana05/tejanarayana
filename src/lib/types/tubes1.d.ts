@@ -10,6 +10,8 @@ declare module '$lib/vendor/tubes1.min.js' {
 	type TubesOptions = {
 		tubes?: {
 			colors?: string[];
+			lerp?: number;
+			noise?: number;
 			lights?: {
 				intensity?: number;
 				colors?: string[];

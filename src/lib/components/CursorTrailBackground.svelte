@@ -41,10 +41,12 @@
 				const { default: TubesCursor } = await import('$lib/vendor/tubes1.min.js');
 				if (cancelled || !canvas) return;
 
-				// Exact FreeFrontend / pasted demo config
+				// FreeFrontend TubesCursor — high lerp = snappy follow
 				app = TubesCursor(canvas, {
 					tubes: {
 						colors: ['#f967fb', '#53bc28', '#6958d5'],
+						lerp: 0.95,
+						noise: 0.03,
 						lights: {
 							intensity: 200,
 							colors: ['#83f36e', '#fe8a2e', '#ff008a', '#60aed5']
