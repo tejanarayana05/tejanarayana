@@ -34,8 +34,9 @@
 	{#if !failed}
 		<canvas bind:this={canvas} class="bh-canvas"></canvas>
 	{/if}
-	<!-- Static veil only — black hole freeze/zoom is handled in the engine -->
+	<!-- Cinematic atmosphere: reading scrim left, letterbox, depth falloff -->
 	<div class="bh-veil"></div>
+	<div class="bh-letterbox"></div>
 </div>
 
 <style>
@@ -58,14 +59,36 @@
 		position: absolute;
 		inset: 0;
 		background:
-			radial-gradient(ellipse 78% 68% at 50% 45%, transparent 40%, rgba(0, 0, 0, 0.18) 100%),
+			/* left reading key — keeps hero type legible without flattening the hole */
+			linear-gradient(
+				95deg,
+				rgba(0, 0, 0, 0.55) 0%,
+				rgba(0, 0, 0, 0.28) 28%,
+				rgba(0, 0, 0, 0.06) 52%,
+				transparent 72%
+			),
+			radial-gradient(ellipse 85% 70% at 55% 48%, transparent 32%, rgba(0, 0, 0, 0.28) 100%),
 			linear-gradient(
 				180deg,
-				rgba(0, 0, 0, 0.1) 0%,
-				transparent 26%,
-				transparent 74%,
-				rgba(0, 0, 0, 0.28) 100%
+				rgba(0, 0, 0, 0.22) 0%,
+				transparent 18%,
+				transparent 62%,
+				rgba(0, 0, 0, 0.42) 100%
 			);
+		pointer-events: none;
+	}
+
+	.bh-letterbox {
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(
+			180deg,
+			rgba(0, 0, 0, 0.35) 0%,
+			transparent 7%,
+			transparent 93%,
+			rgba(0, 0, 0, 0.45) 100%
+		);
+		opacity: 0.85;
 		pointer-events: none;
 	}
 </style>

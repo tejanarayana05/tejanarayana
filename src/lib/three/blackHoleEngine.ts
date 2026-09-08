@@ -15,19 +15,22 @@ const D2R = Math.PI / 180;
 /**
  * Fixed viewpoint for the whole session.
  * Only radius responds to scroll — disk light keeps flowing while idle.
+ * Zoom uses a filmic ease so the dive feels weighted, not mechanical.
  */
 const VIEW = {
 	/** Top of page — full hole + rays */
-	farR: 26,
+	farR: 27,
 	/** Bottom of page — closer, still framed */
-	nearR: 13,
-	inc: 16,
-	az: 35
+	nearR: 13.5,
+	inc: 15.5,
+	az: 34
 } as const;
 
-function easeInOutCubic(k: number) {
+/** Filmic ease-in-out (smoothstep hermite, slightly heavier mid) */
+function easeFilmic(k: number) {
 	const t = Math.min(1, Math.max(0, k));
-	return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+	const s = t * t * (3 - 2 * t);
+	return s * s * (3 - 2 * s);
 }
 
 function camAtRadius(r: number, out: THREE.Vector3) {
@@ -151,7 +154,7 @@ export function createBlackHoleEngine(canvas: HTMLCanvasElement): BlackHoleEngin
 	const composer = new EffectComposer(renderer, rt);
 	composer.addPass(new RenderPass(fsScene, fsCam));
 
-	const bloomPass = new UnrealBloomPass(new THREE.Vector2(2, 2), 0.42, 0.28, 0.58);
+	const bloomPass = new UnrealBloomPass(new THREE.Vector2(2, 2), 0.48, 0.34, 0.55);
 	bloomPass.enabled = useBloom;
 	composer.addPass(bloomPass);
 
@@ -163,9 +166,10 @@ export function createBlackHoleEngine(canvas: HTMLCanvasElement): BlackHoleEngin
 				tDiffuse: { value: null },
 				uRes: { value: new THREE.Vector2(1, 1) },
 				uTime: { value: 0 },
-				uVignette: { value: 0.78 },
-				uGrain: { value: useBloom ? 0.02 : 0.015 },
-				uCA: { value: 0.0018 }
+				uVignette: { value: 0.82 },
+				uGrain: { value: useBloom ? 0.024 : 0.018 },
+				uCA: { value: 0.0022 },
+				uScroll: { value: 0 }
 			}
 		})
 	);
@@ -242,20 +246,21 @@ export function createBlackHoleEngine(canvas: HTMLCanvasElement): BlackHoleEngin
 	function updateCamera(dt: number) {
 		const scrollTarget = readScrollProgress();
 		const goingUp = scrollTarget < scrollSmooth - 0.001;
+		// Heavy cinematic inertia — settles like a dolly, not a snap
 		const followRate = reducedMotion
 			? 1
 			: goingUp
-				? 1 - Math.exp(-dt * 5.5)
-				: 1 - Math.exp(-dt * 2.4);
+				? 1 - Math.exp(-dt * 4.2)
+				: 1 - Math.exp(-dt * 1.85);
 
 		scrollSmooth += (scrollTarget - scrollSmooth) * followRate;
-		if (scrollTarget <= 0.004) scrollSmooth = 0;
+		if (scrollTarget <= 0.003) scrollSmooth = 0;
 
-		const k = easeInOutCubic(scrollSmooth);
+		const k = easeFilmic(scrollSmooth);
 		const r = THREE.MathUtils.lerp(VIEW.farR, VIEW.nearR, k);
 		camAtRadius(r, desiredPos);
 
-		const camFollow = reducedMotion ? 1 : 1 - Math.exp(-dt * 3.2);
+		const camFollow = reducedMotion ? 1 : 1 - Math.exp(-dt * 2.4);
 		camPos.lerp(desiredPos, camFollow);
 
 		const dist2 =
@@ -270,8 +275,10 @@ export function createBlackHoleEngine(canvas: HTMLCanvasElement): BlackHoleEngin
 		uniforms.uCamPos.value.copy(camPos);
 		uniforms.uCamTarget.value.copy(camTarget);
 
-		const fovDeg = THREE.MathUtils.lerp(44, 42, k);
+		// Subtle FOV squeeze on dive — telephoto compression feel
+		const fovDeg = THREE.MathUtils.lerp(46, 40.5, k);
 		uniforms.uFov.value = 1 / Math.tan(THREE.MathUtils.degToRad(fovDeg) / 2);
+		compositePass.uniforms.uScroll.value = k;
 	}
 
 	function frame(now: number) {

@@ -4,7 +4,7 @@
 
 <section
 	id="signals"
-	class="scroll-mt-24 px-5 py-20 sm:px-8 sm:py-28 lg:px-12"
+	class="section-cinematic scroll-mt-24 px-5 py-20 sm:px-8 sm:py-28 lg:px-12"
 	aria-labelledby="signals-heading"
 >
 	<div class="mx-auto max-w-5xl">

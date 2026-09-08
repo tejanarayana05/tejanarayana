@@ -134,8 +134,8 @@ vec3 milkyway(vec3 d){
   float cloud = fbm(p*1.25 + 5.2);
   float dust  = fbm(p*2.1 + 9.1);
   float bloom = fbm(p*0.7 + vec3(2.1, uTime*0.015, 4.4));
-  vec3 col = mix(vec3(0.03,0.06,0.18), vec3(0.36,0.18,0.48), smoothstep(0.22,0.88,cloud));
-  col = mix(col, vec3(0.55,0.22,0.28), smoothstep(0.55,0.95,bloom)*0.45);
+  vec3 col = mix(vec3(0.04,0.07,0.18), vec3(0.30,0.18,0.40), smoothstep(0.18,0.90,cloud));
+  col = mix(col, vec3(0.46,0.26,0.24), smoothstep(0.45,0.95,bloom)*0.35);
   col *= band;
   col *= 1.0 - 0.55*smoothstep(0.40,0.88,dust);
   col *= 1.35;
@@ -414,6 +414,7 @@ uniform float uTime;
 uniform float uVignette;
 uniform float uGrain;
 uniform float uCA;
+uniform float uScroll;
 
 vec3 aces(vec3 x){
   return clamp((x*(2.51*x + 0.03))/(x*(2.43*x + 0.59) + 0.14), 0.0, 1.0);
@@ -424,27 +425,40 @@ float ghash(vec2 p){
 void main(){
   vec2 uv = vUv;
   vec2 dir = uv - 0.5;
+  float scroll = clamp(uScroll, 0.0, 1.0);
 
-  // chromatic aberration (radial, R/B symmetric)
-  float ca = uCA*dot(dir, dir);
+  // soft radial chromatic aberration — stronger at edges / deeper zoom
+  float ca = uCA * (0.85 + 0.55*scroll) * dot(dir, dir);
   vec3 col;
   col.r = texture2D(tDiffuse, uv + dir*ca).r;
   col.g = texture2D(tDiffuse, uv).g;
   col.b = texture2D(tDiffuse, uv - dir*ca).b;
 
-  // manual ACES (renderer tone mapping stays OFF)
-  col *= 0.82;
+  // filmic exposure pull — slightly darker as we dive in
+  float exposure = mix(0.86, 0.74, smoothstep(0.0, 1.0, scroll));
+  col *= exposure;
   col = aces(col);
 
-  // aspect-aware vignette
+  // gentle contrast + warm mid lift (cinema grade, not posterized)
+  col = pow(max(col, 0.0), vec3(mix(0.96, 1.02, scroll)));
+  vec3 warm = vec3(1.04, 0.99, 0.94);
+  vec3 cool = vec3(0.96, 0.98, 1.04);
+  float luma = dot(col, vec3(0.2126, 0.7152, 0.0722));
+  col *= mix(cool, warm, smoothstep(0.08, 0.55, luma));
+
+  // cinematic vignette — deeper toward page end
   float aspect = uRes.x/max(uRes.y, 1.0);
-  float vig = smoothstep(1.30, 0.30, length(dir*vec2(aspect, 1.0))*1.15);
-  col *= mix(1.0, vig, uVignette);
+  float r = length(dir*vec2(aspect, 1.0));
+  float vig = smoothstep(1.22, 0.22, r*mix(1.08, 1.22, scroll));
+  // soft letterbox weight top/bottom
+  float bars = smoothstep(0.0, 0.18, uv.y) * smoothstep(0.0, 0.18, 1.0 - uv.y);
+  bars = mix(1.0, bars, 0.22 + 0.18*scroll);
+  col *= mix(1.0, vig, uVignette) * bars;
 
-  // animated fine grain, centered [-.5,.5]
-  float g = ghash(gl_FragCoord.xy + fract(uTime*13.7)*97.0) - 0.5;
-  col += g*uGrain*(1.0 - 0.5*col);
+  // fine animated grain
+  float g = ghash(gl_FragCoord.xy + fract(uTime*11.3)*97.0) - 0.5;
+  col += g * uGrain * (1.0 - 0.45*luma);
 
-  gl_FragColor = vec4(col, 1.0);
+  gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
 }
 `;
