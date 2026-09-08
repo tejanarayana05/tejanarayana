@@ -5,21 +5,22 @@
 	--font-display: 'Syne', ui-sans-serif, system-ui, sans-serif;
 	--font-sans: 'Sora', ui-sans-serif, system-ui, sans-serif;
 
-	--color-ink: #0f1419;
-	--color-paper: #f3efe6;
-	--color-field: #e7edf2;
-	--color-field-deep: #d5e4ec;
-	--color-signal: #0d9488;
-	--color-signal-hot: #ea580c;
-	--color-mute: #5b6570;
-	--color-line: rgba(15, 20, 25, 0.12);
-	--color-line-strong: rgba(15, 20, 25, 0.22);
+	/* Light type / glass UI over the black-hole canvas */
+	--color-ink: #f4f1ea;
+	--color-paper: #0a0c10;
+	--color-field: rgba(255, 255, 255, 0.06);
+	--color-field-deep: rgba(255, 255, 255, 0.1);
+	--color-signal: #2dd4bf;
+	--color-signal-hot: #fb923c;
+	--color-mute: #a7b0bc;
+	--color-line: rgba(244, 241, 234, 0.14);
+	--color-line-strong: rgba(244, 241, 234, 0.28);
 }
 
 @layer base {
 	html {
 		scroll-behavior: smooth;
-		color-scheme: light;
+		color-scheme: dark;
 	}
 
 	body {
@@ -27,17 +28,13 @@
 		min-height: 100dvh;
 		font-family: var(--font-sans);
 		color: var(--color-ink);
-		background:
-			radial-gradient(1200px 600px at 85% -10%, rgba(13, 148, 136, 0.18), transparent 55%),
-			radial-gradient(900px 500px at -10% 20%, rgba(234, 88, 12, 0.1), transparent 50%),
-			linear-gradient(165deg, var(--color-paper) 0%, var(--color-field) 48%, var(--color-field-deep) 100%);
-		background-attachment: fixed;
+		background: #000;
 		-webkit-font-smoothing: antialiased;
 		text-rendering: optimizeLegibility;
 	}
 
 	::selection {
-		background: color-mix(in oklab, var(--color-signal) 35%, white);
+		background: color-mix(in oklab, var(--color-signal) 45%, black);
 		color: var(--color-ink);
 	}
 
@@ -60,14 +57,6 @@
 
 	.text-balance {
 		text-wrap: balance;
-	}
-
-	.mesh-grid {
-		background-image:
-			linear-gradient(to right, rgba(15, 20, 25, 0.06) 1px, transparent 1px),
-			linear-gradient(to bottom, rgba(15, 20, 25, 0.06) 1px, transparent 1px);
-		background-size: 48px 48px;
-		mask-image: radial-gradient(ellipse 80% 70% at 70% 40%, black 20%, transparent 75%);
 	}
 }
 

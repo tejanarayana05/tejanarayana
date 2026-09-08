@@ -1,6 +1,7 @@
 <script lang="ts">
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
+	import BlackHoleBackground from '$lib/components/BlackHoleBackground.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import Nav from '$lib/components/Nav.svelte';
 	import { site } from '$lib/data/site';
@@ -16,6 +17,7 @@
 		href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Syne:wght@500;600;700;800&display=swap"
 		rel="stylesheet"
 	/>
+	<meta name="theme-color" content="#000000" />
 	<title>{site.name} — {site.role}</title>
 	<meta name="description" content={site.description} />
 	<meta name="author" content={site.name} />
@@ -28,12 +30,16 @@
 	<meta name="twitter:description" content={site.description} />
 </svelte:head>
 
-<a
-	href="#main"
-	class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:bg-ink focus:px-4 focus:py-2 focus:text-paper"
->
-	Skip to content
-</a>
-<Nav />
-<main id="main">{@render children()}</main>
-<Footer />
+<BlackHoleBackground />
+
+<div class="relative z-10">
+	<a
+		href="#main"
+		class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:bg-ink focus:px-4 focus:py-2 focus:text-paper"
+	>
+		Skip to content
+	</a>
+	<Nav />
+	<main id="main">{@render children()}</main>
+	<Footer />
+</div>

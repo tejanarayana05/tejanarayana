@@ -47,7 +47,7 @@
 <svelte:window onkeydown={closeOnEscape} />
 
 <header
-	class="nav-shell fixed inset-x-0 top-0 z-50 border-b border-line bg-paper/80 backdrop-blur-md"
+	class="nav-shell fixed inset-x-0 top-0 z-50 border-b border-line bg-paper/55 backdrop-blur-md"
 >
 	<div class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
 		<a
@@ -114,7 +114,7 @@
 	{#if open}
 		<div
 			id="mobile-nav"
-			class="border-t border-line bg-paper md:hidden"
+			class="border-t border-line bg-paper/90 md:hidden"
 			transition:fly={{ y: -8, duration: 200 }}
 			role="dialog"
 			aria-modal="true"

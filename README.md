@@ -30,6 +30,6 @@ Open [http://127.0.0.1:5173](http://127.0.0.1:5173) (Vite’s default port).
 - Tailwind CSS v4 (`@tailwindcss/vite`)
 - Typography plugin for long-form content hooks
 
-## Content
+## Visual
 
-Site copy is drawn from [aejt.in](https://www.aejt.in) — especially the authentic journey (GXCO, product analysis, IEEE research, ACM Winter School) — rewritten into a more visual, less text-heavy landing experience.
+The site uses a full-viewport **Schwarzschild black-hole raytracer** (Three.js / GLSL) as a fixed background on every page. Scroll interpolates the camera from a distant “poster” view toward the GARGANTUA **close** preset. No HUD, parameters, or OrbitControls are exposed.
