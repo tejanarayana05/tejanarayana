@@ -11,78 +11,37 @@ import {
 } from './gargantuaShaders.js';
 
 const D2R = Math.PI / 180;
-const INC_MIN = 8 * D2R;
-const INC_MAX = 28 * D2R;
 
 /**
- * Permanent morph fly-around. Inclinations stay in a band that always
- * shows the circular event horizon + photon-ring flares (no polar dive).
- * Radii pre-scaled ~75% larger than stock GARGANTUA.
+ * Fixed viewpoint — only radius changes with scroll.
+ * Chosen so the event horizon + red flare belt stay framed.
  */
-const CINE_KEYS: ReadonlyArray<readonly [number, number, number]> = [
-	[33, 16, -30],
-	[26, 10, 20],
-	[20, 22, 70],
-	[15, 14, 120],
-	[17, 20, 170],
-	[22, 12, 220],
-	[28, 18, 280],
-	[30, 11, 330]
-];
-
-const R_FLOOR = 13;
-const CINE_SEGMENT = 12;
-
-const K_R = CINE_KEYS.map((k) => k[0]);
-const K_I = CINE_KEYS.map((k) => k[1] * D2R);
-const K_A = CINE_KEYS.map((k) => k[2] * D2R);
-
-function cr(p0: number, p1: number, p2: number, p3: number, t: number) {
-	const t2 = t * t;
-	const t3 = t2 * t;
-	return (
-		0.5 *
-		(2 * p1 +
-			(-p0 + p2) * t +
-			(2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 +
-			(-p0 + 3 * p1 - 3 * p2 + p3) * t3)
-	);
-}
-
-function wrapIdx(k: number, n: number) {
-	return ((k % n) + n) % n;
-}
-
-function cinePath(time: number, out: THREE.Vector3) {
-	const n = CINE_KEYS.length;
-	const tt = time / CINE_SEGMENT;
-	const i = Math.floor(tt);
-	const t = tt - i;
-	const v = (arr: number[], k: number) => arr[wrapIdx(k, n)];
-	const az = (k: number) => K_A[wrapIdx(k, n)] + 2 * Math.PI * Math.floor(k / n);
-	const r = Math.max(R_FLOOR, cr(v(K_R, i - 1), v(K_R, i), v(K_R, i + 1), v(K_R, i + 2), t));
-	const inc = THREE.MathUtils.clamp(
-		cr(v(K_I, i - 1), v(K_I, i), v(K_I, i + 1), v(K_I, i + 2), t),
-		INC_MIN,
-		INC_MAX
-	);
-	const a = cr(az(i - 1), az(i), az(i + 1), az(i + 2), t);
-	return out.set(
-		r * Math.cos(inc) * Math.sin(a),
-		r * Math.sin(inc),
-		r * Math.cos(inc) * Math.cos(a)
-	);
-}
+const VIEW = {
+	/** Top of page */
+	farR: 26,
+	/** Bottom of page — still outside the blank horizon */
+	nearR: 13,
+	inc: 16,
+	az: 35
+} as const;
 
 function easeInOutCubic(k: number) {
 	const t = Math.min(1, Math.max(0, k));
 	return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
+function camAtRadius(r: number, out: THREE.Vector3) {
+	const inc = VIEW.inc * D2R;
+	const az = VIEW.az * D2R;
+	return out.set(
+		r * Math.cos(inc) * Math.sin(az),
+		r * Math.sin(inc),
+		r * Math.cos(inc) * Math.cos(az)
+	);
+}
+
 type Profile = {
 	steps: number;
-	/** Hard floor — below this the horizon silhouette collapses. */
-	minSteps: number;
 	dpr: number;
 	budget: number;
 	bloom: boolean;
@@ -91,16 +50,16 @@ type Profile = {
 
 function buildProfile(): Profile {
 	if (typeof window === 'undefined') {
-		return { steps: 240, minSteps: 200, dpr: 1, budget: 1.2e6, bloom: false, frameMs: 33 };
+		return { steps: 240, dpr: 1, budget: 1.2e6, bloom: false, frameMs: 33 };
 	}
 	const mobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
 	const cores = navigator.hardwareConcurrency || 4;
 	const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
 		?.saveData;
 	if (mobile || saveData || cores <= 4) {
-		return { steps: 240, minSteps: 200, dpr: 1.15, budget: 1.4e6, bloom: false, frameMs: 33 };
+		return { steps: 240, dpr: 1.15, budget: 1.4e6, bloom: false, frameMs: 33 };
 	}
-	return { steps: 380, minSteps: 260, dpr: 1.5, budget: 2.8e6, bloom: true, frameMs: 16.7 };
+	return { steps: 380, dpr: 1.5, budget: 2.8e6, bloom: true, frameMs: 16.7 };
 }
 
 export type BlackHoleEngine = {
@@ -114,8 +73,6 @@ export function createBlackHoleEngine(canvas: HTMLCanvasElement): BlackHoleEngin
 		window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 	const profile = buildProfile();
-	let liveSteps = profile.steps;
-	let liveFrameMs = profile.frameMs;
 
 	let renderer: THREE.WebGLRenderer;
 	try {
@@ -151,8 +108,8 @@ export function createBlackHoleEngine(canvas: HTMLCanvasElement): BlackHoleEngin
 	const fsCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 	const camPos = new THREE.Vector3();
 	const camTarget = new THREE.Vector3(0, 0, 0);
-	const cinePos = new THREE.Vector3();
-	cinePath(0, camPos);
+	const desiredPos = new THREE.Vector3();
+	camAtRadius(VIEW.farR, camPos);
 
 	const uniforms = {
 		uRes: { value: new THREE.Vector2(1, 1) },
@@ -160,7 +117,7 @@ export function createBlackHoleEngine(canvas: HTMLCanvasElement): BlackHoleEngin
 		uCamPos: { value: camPos.clone() },
 		uCamTarget: { value: camTarget.clone() },
 		uFov: { value: 1 / Math.tan(THREE.MathUtils.degToRad(44) / 2) },
-		uSteps: { value: liveSteps | 0 },
+		uSteps: { value: profile.steps | 0 },
 		uRotSign: { value: 1 },
 		uDebug: { value: 0 },
 		uDin: { value: 2.75 },
@@ -171,7 +128,8 @@ export function createBlackHoleEngine(canvas: HTMLCanvasElement): BlackHoleEngin
 		uDiskBright: { value: 1.15 },
 		uStarBright: { value: 1.05 },
 		uSkyFloor: { value: 0.035 },
-		uRotSpeed: { value: reducedMotion ? 0.25 : 1.0 }
+		/** Frozen disk — no idle morph / turbulence drift */
+		uRotSpeed: { value: 0 }
 	};
 
 	const fsMat = new THREE.ShaderMaterial({
@@ -193,7 +151,7 @@ export function createBlackHoleEngine(canvas: HTMLCanvasElement): BlackHoleEngin
 	const composer = new EffectComposer(renderer, rt);
 	composer.addPass(new RenderPass(fsScene, fsCam));
 
-	const bloomPass = new UnrealBloomPass(new THREE.Vector2(2, 2), 0.58, 0.36, 0.5);
+	const bloomPass = new UnrealBloomPass(new THREE.Vector2(2, 2), 0.55, 0.35, 0.52);
 	bloomPass.enabled = useBloom;
 	composer.addPass(bloomPass);
 
@@ -206,8 +164,9 @@ export function createBlackHoleEngine(canvas: HTMLCanvasElement): BlackHoleEngin
 				uRes: { value: new THREE.Vector2(1, 1) },
 				uTime: { value: 0 },
 				uVignette: { value: 0.8 },
-				uGrain: { value: profile.bloom ? 0.038 : 0.028 },
-				uCA: { value: 0.0022 }
+				/** Static grain (uTime held at 0) */
+				uGrain: { value: 0.02 },
+				uCA: { value: 0.002 }
 			}
 		})
 	);
@@ -215,17 +174,14 @@ export function createBlackHoleEngine(canvas: HTMLCanvasElement): BlackHoleEngin
 
 	const _dbSize = new THREE.Vector2();
 	let scrollSmooth = 0;
-	let cineTime = 0;
-	let simTime = 0;
 	let lastNow = performance.now();
 	let frameDebt = 0;
 	let raf = 0;
 	let disposed = false;
 	let contextLost = false;
-	let fpsFrames = 0;
-	let fpsWindow = 0;
 	let resizeQueued = false;
-	let scrollSettling = false;
+	let needsRender = true;
+	let liveFrameMs = profile.frameMs;
 
 	const onContextLost = (e: Event) => {
 		e.preventDefault();
@@ -236,6 +192,7 @@ export function createBlackHoleEngine(canvas: HTMLCanvasElement): BlackHoleEngin
 	const onContextRestored = () => {
 		contextLost = false;
 		resize();
+		needsRender = true;
 		if (!raf && !disposed) raf = requestAnimationFrame(frame);
 	};
 	canvas.addEventListener('webglcontextlost', onContextLost, false);
@@ -256,6 +213,7 @@ export function createBlackHoleEngine(canvas: HTMLCanvasElement): BlackHoleEngin
 		renderer.getDrawingBufferSize(_dbSize);
 		uniforms.uRes.value.copy(_dbSize);
 		compositePass.uniforms.uRes.value.copy(_dbSize);
+		needsRender = true;
 	}
 
 	function queueResize() {
@@ -277,59 +235,38 @@ export function createBlackHoleEngine(canvas: HTMLCanvasElement): BlackHoleEngin
 	function updateCamera(dt: number) {
 		const scrollTarget = readScrollProgress();
 		const goingUp = scrollTarget < scrollSmooth - 0.001;
-		// Snap back faster when scrolling up so the far morph state returns
 		const followRate = reducedMotion
 			? 1
 			: goingUp
 				? 1 - Math.exp(-dt * 7)
-				: 1 - Math.exp(-dt * 3.4);
+				: 1 - Math.exp(-dt * 3.2);
+		const prev = scrollSmooth;
 		scrollSmooth += (scrollTarget - scrollSmooth) * followRate;
 		if (scrollTarget <= 0.008) scrollSmooth = 0;
-		scrollSettling = Math.abs(scrollSmooth - scrollTarget) > 0.0015;
+
+		if (Math.abs(scrollSmooth - prev) > 1e-5) needsRender = true;
 
 		const k = easeInOutCubic(scrollSmooth);
+		const r = THREE.MathUtils.lerp(VIEW.farR, VIEW.nearR, k);
+		camAtRadius(r, desiredPos);
 
-		if (!reducedMotion) {
-			cineTime += dt;
+		const beforeX = camPos.x;
+		const beforeY = camPos.y;
+		const beforeZ = camPos.z;
+		const camFollow = reducedMotion ? 1 : 1 - Math.exp(-dt * 4);
+		camPos.lerp(desiredPos, camFollow);
+		if (
+			(camPos.x - beforeX) ** 2 + (camPos.y - beforeY) ** 2 + (camPos.z - beforeZ) ** 2 >
+			1e-8
+		) {
+			needsRender = true;
 		}
 
-		cinePath(cineTime, cinePos);
-
-		// Scroll pulls toward flare belt; k→0 fully restores the open morph radius
-		const r0 = Math.max(cinePos.length(), R_FLOOR);
-		const r1 = THREE.MathUtils.lerp(r0, R_FLOOR, k * 0.55);
-		cinePos.multiplyScalar(r1 / r0);
-
-		camPos.copy(cinePos);
 		uniforms.uCamPos.value.copy(camPos);
 		uniforms.uCamTarget.value.copy(camTarget);
 
-		const fovDeg = THREE.MathUtils.lerp(45, 42, k);
+		const fovDeg = THREE.MathUtils.lerp(44, 42, k);
 		uniforms.uFov.value = 1 / Math.tan(THREE.MathUtils.degToRad(fovDeg) / 2);
-	}
-
-	function adaptQuality(realDt: number) {
-		fpsFrames++;
-		fpsWindow += realDt;
-		if (fpsWindow < 1.25) return;
-		const fps = fpsFrames / fpsWindow;
-		fpsFrames = 0;
-		fpsWindow = 0;
-
-		// Prefer dropping frame rate over geodesic steps — steps preserve the ring
-		if (fps < 26) {
-			liveFrameMs = Math.min(40, liveFrameMs + 4);
-			if (fps < 20 && liveSteps > profile.minSteps) {
-				liveSteps = Math.max(profile.minSteps, liveSteps - 20);
-				uniforms.uSteps.value = liveSteps | 0;
-			}
-		} else if (fps > 50) {
-			liveFrameMs = Math.max(profile.frameMs, liveFrameMs - 2);
-			if (liveSteps < profile.steps) {
-				liveSteps = Math.min(profile.steps, liveSteps + 15);
-				uniforms.uSteps.value = liveSteps | 0;
-			}
-		}
 	}
 
 	function frame(now: number) {
@@ -344,23 +281,24 @@ export function createBlackHoleEngine(canvas: HTMLCanvasElement): BlackHoleEngin
 
 		const realDt = Math.min(0.1, Math.max(0.0005, (now - lastNow) / 1000));
 		lastNow = now;
-		adaptQuality(realDt);
-
 		const dt = Math.min(realDt, 0.05);
-		simTime += reducedMotion ? dt * 0.3 : dt;
+
 		updateCamera(dt);
 
+		// Idle: do not advance shader time — image stays exactly as last scroll pose
+		uniforms.uTime.value = 0;
+		compositePass.uniforms.uTime.value = 0;
+
 		frameDebt += realDt * 1000;
-		const shouldRender = scrollSettling || frameDebt >= liveFrameMs * 0.9;
-		if (shouldRender) {
-			frameDebt = Math.min(Math.max(0, frameDebt - liveFrameMs), liveFrameMs);
-		} else {
+		const due = frameDebt >= liveFrameMs * 0.9;
+		if (!needsRender && !due) return;
+		if (due) frameDebt = Math.min(Math.max(0, frameDebt - liveFrameMs), liveFrameMs);
+		if (!needsRender && due) {
+			// Steady idle re-draw at capped FPS only if bloom/GPU needs a refresh; skip otherwise
 			return;
 		}
 
-		uniforms.uTime.value = simTime;
-		compositePass.uniforms.uTime.value = simTime;
-
+		needsRender = false;
 		try {
 			composer.render();
 		} catch (err) {
@@ -386,6 +324,7 @@ export function createBlackHoleEngine(canvas: HTMLCanvasElement): BlackHoleEngin
 	window.addEventListener('resize', queueResize, { passive: true });
 	resize();
 	updateCamera(1);
+	needsRender = true;
 	raf = requestAnimationFrame(frame);
 
 	return { resize: queueResize, dispose };

@@ -34,8 +34,7 @@
 	{#if !failed}
 		<canvas bind:this={canvas} class="bh-canvas"></canvas>
 	{/if}
-	<!-- Permanent film / CRT morph veil from the GARGANTUA #fx layer -->
-	<div class="bh-fx"></div>
+	<!-- Soft edge vignette only — no animated film morph layer -->
 	<div class="bh-veil"></div>
 </div>
 
@@ -55,23 +54,6 @@
 		height: 100%;
 	}
 
-	.bh-fx {
-		position: absolute;
-		inset: 0;
-		pointer-events: none;
-		opacity: 0.55;
-		mix-blend-mode: screen;
-		background:
-			repeating-linear-gradient(
-				0deg,
-				rgba(255, 255, 255, 0.025) 0px,
-				rgba(255, 255, 255, 0.025) 1px,
-				transparent 1px,
-				transparent 3px
-			),
-			radial-gradient(ellipse at center, transparent 0%, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
-	}
-
 	.bh-veil {
 		position: absolute;
 		inset: 0;
@@ -85,11 +67,5 @@
 				rgba(0, 0, 0, 0.28) 100%
 			);
 		pointer-events: none;
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.bh-fx {
-			opacity: 0.35;
-		}
 	}
 </style>
