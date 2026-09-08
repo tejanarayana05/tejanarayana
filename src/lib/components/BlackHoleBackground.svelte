@@ -34,7 +34,7 @@
 	{#if !failed}
 		<canvas bind:this={canvas} class="bh-canvas"></canvas>
 	{/if}
-	<!-- Soft edge vignette only — no animated film morph layer -->
+	<!-- Static veil only — black hole freeze/zoom is handled in the engine -->
 	<div class="bh-veil"></div>
 </div>
 
