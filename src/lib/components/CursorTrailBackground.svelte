@@ -1,61 +1,80 @@
 <script lang="ts">
+	/**
+	 * Global neon tubes cursor trail — FreeFrontend TubesCursor demo.
+	 * Licence CC BY-NC-SA 4.0 — Kevin Levron / threejs-components@0.0.19
+	 */
 	import { onMount } from 'svelte';
-	import type { NeonTrailEngine } from '$lib/three/neonTrailEngine';
+
+	type TubesApp = {
+		tubes: {
+			setColors: (colors: string[]) => void;
+			setLightsColors: (colors: string[]) => void;
+		};
+		dispose?: () => void;
+	};
 
 	let canvas: HTMLCanvasElement | undefined = $state();
 	let failed = $state(false);
 
 	function randomColors(count: number) {
-		return Array.from(
-			{ length: count },
-			() => '#' + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0')
-		);
+		return new Array(count)
+			.fill(0)
+			.map(() => '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0'));
 	}
 
 	onMount(() => {
 		if (!canvas) return;
 
 		let cancelled = false;
-		let engine: NeonTrailEngine | null = null;
-		const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		let app: TubesApp | null = null;
 
 		const onClick = () => {
-			if (!engine || reducedMotion) return;
-			engine.setColors(randomColors(3));
-			engine.setLightsColors(randomColors(4));
+			if (!app) return;
+			const colors = randomColors(3);
+			const lightsColors = randomColors(4);
+			app.tubes.setColors(colors);
+			app.tubes.setLightsColors(lightsColors);
 		};
 
 		(async () => {
 			try {
-				const { createNeonTrailEngine } = await import('$lib/three/neonTrailEngine');
+				const { default: TubesCursor } = await import('$lib/vendor/tubes1.min.js');
 				if (cancelled || !canvas) return;
 
-				engine = createNeonTrailEngine(canvas, {
-					reducedMotion,
-					tubeColors: ['#f967fb', '#53bc28', '#6958d5'],
-					lightColors: ['#83f36e', '#fe8a2e', '#ff008a', '#60aed5'],
-					lightIntensity: reducedMotion ? 1.2 : 2.4
+				// Exact FreeFrontend / pasted demo config
+				app = TubesCursor(canvas, {
+					tubes: {
+						colors: ['#f967fb', '#53bc28', '#6958d5'],
+						lights: {
+							intensity: 200,
+							colors: ['#83f36e', '#fe8a2e', '#ff008a', '#60aed5']
+						}
+					}
 				});
-				engine.resize();
-				window.addEventListener('click', onClick);
+
+				document.body.addEventListener('click', onClick);
 			} catch (e) {
-				console.error('[cursor-trail]', e);
+				console.error('[tubes-cursor]', e);
 				failed = true;
 			}
 		})();
 
 		return () => {
 			cancelled = true;
-			window.removeEventListener('click', onClick);
-			engine?.dispose();
-			engine = null;
+			document.body.removeEventListener('click', onClick);
+			try {
+				app?.dispose?.();
+			} catch {
+				/* ignore */
+			}
+			app = null;
 		};
 	});
 </script>
 
 <div class="trail-root" aria-hidden="true">
 	{#if !failed}
-		<canvas bind:this={canvas} class="trail-canvas"></canvas>
+		<canvas bind:this={canvas} id="canvas" class="trail-canvas"></canvas>
 	{/if}
 </div>
 
@@ -64,15 +83,22 @@
 		position: fixed;
 		inset: 0;
 		z-index: 0;
-		pointer-events: none;
 		overflow: hidden;
 		background: #000;
+		pointer-events: none;
 	}
 
+	/* Matches FreeFrontend #canvas — full viewport, under UI */
 	.trail-canvas {
+		position: fixed;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		left: 0;
 		display: block;
 		width: 100%;
 		height: 100%;
+		overflow: hidden;
 		pointer-events: none;
 	}
 </style>

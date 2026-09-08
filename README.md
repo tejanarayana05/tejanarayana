@@ -29,8 +29,8 @@ Open [http://127.0.0.1:5173](http://127.0.0.1:5173) (Vite’s default port).
 - SvelteKit + TypeScript
 - Tailwind CSS v4 (`@tailwindcss/vite`)
 - Typography plugin for long-form content hooks
-- Three.js neon tubes cursor trail (FreeFrontend TubesCursor-style)
+- [`threejs-components`](https://www.npmjs.com/package/threejs-components) `TubesCursor` (CC BY-NC-SA 4.0)
 
 ## Visual
 
-Every page uses a black background with a global **neon 3D tubes cursor trail**. Move the pointer and glowing tubes follow as a wave; click to reshuffle colors. The effect mounts once in the root layout, so every route/component inherits it automatically.
+Black background with the FreeFrontend **Neon 3D Tubes Cursor Trail** mounted once in the root layout (every page inherits it). Move the pointer to draw glowing tubes; click to reshuffle colors.
