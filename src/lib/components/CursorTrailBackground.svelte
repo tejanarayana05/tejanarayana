@@ -45,8 +45,10 @@
 				app = TubesCursor(canvas, {
 					tubes: {
 						colors: ['#f967fb', '#53bc28', '#6958d5'],
-						lerp: 0.95,
+						lerp: 0.75,
 						noise: 0.03,
+						minTubularSegments: 48,
+						maxTubularSegments: 180,
 						lights: {
 							intensity: 200,
 							colors: ['#83f36e', '#fe8a2e', '#ff008a', '#60aed5']

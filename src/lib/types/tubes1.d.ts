@@ -12,6 +12,8 @@ declare module '$lib/vendor/tubes1.min.js' {
 			colors?: string[];
 			lerp?: number;
 			noise?: number;
+			minTubularSegments?: number;
+			maxTubularSegments?: number;
 			lights?: {
 				intensity?: number;
 				colors?: string[];
