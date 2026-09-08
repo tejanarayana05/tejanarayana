@@ -13,13 +13,14 @@ import {
 const D2R = Math.PI / 180;
 
 /**
- * Camera path mirrors GARGANTUA presets, exaggerated for scroll drama:
- * far cinematic open → close-in photon-ring view.
- * Radii are /1.75 vs the prior path so the hole reads ~75% larger on screen.
+ * Scroll path: keep a large silhouette, but never dive past the disk /
+ * photon-ring belt — stay on the circumference where red flares read.
+ * Azimuth walks around the hole as the page scrolls.
  */
 export const VIEW = {
-	far: { r: 24, inc: 18, az: -20 },
-	close: { r: 4.11, inc: 12, az: 55 }
+	far: { r: 24, inc: 22, az: -25 },
+	/** Floor radius — inside this the frame goes black / empty */
+	close: { r: 12.5, inc: 9, az: 200 }
 } as const;
 
 /** Match reference cinematic profile — low step counts break the horizon silhouette. */
@@ -101,11 +102,9 @@ export function createBlackHoleEngine(canvas: HTMLCanvasElement): BlackHoleEngin
 	const fsCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
 	const farPos = presetVec(VIEW.far);
-	const closePos = presetVec(VIEW.close);
 	const camPos = farPos.clone();
 	const camTarget = new THREE.Vector3(0, 0, 0);
 	const desiredPos = farPos.clone();
-	const _tmp = new THREE.Vector3();
 
 	const uniforms = {
 		uRes: { value: new THREE.Vector2(1, 1) },
@@ -207,31 +206,36 @@ export function createBlackHoleEngine(canvas: HTMLCanvasElement): BlackHoleEngin
 	}
 
 	function updateCamera(dt: number) {
-		// Smooth scroll progress (cinematic ease)
-		const follow = reducedMotion ? 1 : 1 - Math.exp(-dt * 4.2);
+		// Smooth scroll progress — ease keeps mid-orbit lingering on the flares
+		const follow = reducedMotion ? 1 : 1 - Math.exp(-dt * 3.2);
 		scrollSmooth += (scrollTarget - scrollSmooth) * follow;
 		const k = easeInOutCubic(scrollSmooth);
 
-		_tmp.lerpVectors(farPos, closePos, k);
+		const r = THREE.MathUtils.lerp(VIEW.far.r, VIEW.close.r, k);
+		const inc = THREE.MathUtils.lerp(VIEW.far.inc, VIEW.close.inc, k) * D2R;
+		// Walk the circumference as the page scrolls (not a straight dive-in)
+		const az = THREE.MathUtils.lerp(VIEW.far.az, VIEW.close.az, k) * D2R;
 
-		// Gentle orbit only while still far — stops fighting the close-up
+		// Tiny ambient drift so the disk keeps breathing even when idle
 		if (!reducedMotion) {
-			azDrift += dt * 0.045 * (1 - k);
-			const c = Math.cos(azDrift);
-			const s = Math.sin(azDrift);
-			desiredPos.set(_tmp.x * c + _tmp.z * s, _tmp.y, -_tmp.x * s + _tmp.z * c);
-		} else {
-			desiredPos.copy(_tmp);
+			azDrift += dt * 0.02;
 		}
+		const azLive = az + azDrift;
 
-		const camFollow = reducedMotion ? 1 : 1 - Math.exp(-dt * 3.5);
+		desiredPos.set(
+			r * Math.cos(inc) * Math.sin(azLive),
+			r * Math.sin(inc),
+			r * Math.cos(inc) * Math.cos(azLive)
+		);
+
+		const camFollow = reducedMotion ? 1 : 1 - Math.exp(-dt * 2.8);
 		camPos.lerp(desiredPos, camFollow);
 
 		uniforms.uCamPos.value.copy(camPos);
 		uniforms.uCamTarget.value.copy(camTarget);
 
-		// Slight FOV tighten on approach (more immersive zoom)
-		const fovDeg = THREE.MathUtils.lerp(48, 38, k);
+		// Keep FOV wide enough that the disk/flares stay in frame at the end
+		const fovDeg = THREE.MathUtils.lerp(46, 42, k);
 		uniforms.uFov.value = 1 / Math.tan(THREE.MathUtils.degToRad(fovDeg) / 2);
 	}
 

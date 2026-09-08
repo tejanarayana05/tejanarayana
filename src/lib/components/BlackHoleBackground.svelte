@@ -7,15 +7,11 @@
 	let engine: BlackHoleEngine | null = null;
 	let failed = $state(false);
 
-	/**
-	 * Zoom completes over ~1.6 viewports of scroll so the close-up
-	 * reads clearly while browsing the landing page — not only at the footer.
-	 */
+	/** Zoom + orbit tracks the full page length — slow, not 2–3 wheel ticks. */
 	function syncScroll() {
 		if (!engine || !browser) return;
-		const vh = Math.max(1, window.innerHeight);
-		const progress = window.scrollY / (vh * 1.6);
-		engine.setScrollProgress(Math.min(1, Math.max(0, progress)));
+		const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+		engine.setScrollProgress(window.scrollY / max);
 	}
 
 	onMount(() => {
@@ -58,7 +54,6 @@
 	{#if !failed}
 		<canvas bind:this={canvas} class="bh-canvas"></canvas>
 	{/if}
-	<!-- Minimal edge vignette only — keep the event horizon visible -->
 	<div class="bh-veil"></div>
 </div>
 
