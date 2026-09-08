@@ -15,10 +15,11 @@ const D2R = Math.PI / 180;
 /**
  * Camera path mirrors GARGANTUA presets, exaggerated for scroll drama:
  * far cinematic open → close-in photon-ring view.
+ * Radii are /1.75 vs the prior path so the hole reads ~75% larger on screen.
  */
 export const VIEW = {
-	far: { r: 42, inc: 18, az: -20 },
-	close: { r: 7.2, inc: 12, az: 55 }
+	far: { r: 24, inc: 18, az: -20 },
+	close: { r: 4.11, inc: 12, az: 55 }
 } as const;
 
 /** Match reference cinematic profile — low step counts break the horizon silhouette. */
