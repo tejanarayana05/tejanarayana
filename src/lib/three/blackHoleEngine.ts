@@ -122,12 +122,12 @@ export function createBlackHoleEngine(canvas: HTMLCanvasElement): BlackHoleEngin
 		uDebug: { value: 0 },
 		uDin: { value: 2.75 },
 		uDout: { value: 40 },
-		uDopMax: { value: 1.85 },
-		uOpNear: { value: 0.92 },
-		uOpFar: { value: 0.82 },
-		uDiskBright: { value: 1.22 },
-		uStarBright: { value: 1.12 },
-		uSkyFloor: { value: 0.045 },
+		uDopMax: { value: 1.42 },
+		uOpNear: { value: 0.82 },
+		uOpFar: { value: 0.68 },
+		uDiskBright: { value: 0.92 },
+		uStarBright: { value: 1.05 },
+		uSkyFloor: { value: 0.04 },
 		/** Slow cinematic swirl — soft clouds, not racing streaks */
 		uRotSpeed: { value: reducedMotion ? 0.15 : 0.55 }
 	};
@@ -151,7 +151,7 @@ export function createBlackHoleEngine(canvas: HTMLCanvasElement): BlackHoleEngin
 	const composer = new EffectComposer(renderer, rt);
 	composer.addPass(new RenderPass(fsScene, fsCam));
 
-	const bloomPass = new UnrealBloomPass(new THREE.Vector2(2, 2), 0.78, 0.55, 0.42);
+	const bloomPass = new UnrealBloomPass(new THREE.Vector2(2, 2), 0.42, 0.28, 0.58);
 	bloomPass.enabled = useBloom;
 	composer.addPass(bloomPass);
 
@@ -163,9 +163,9 @@ export function createBlackHoleEngine(canvas: HTMLCanvasElement): BlackHoleEngin
 				tDiffuse: { value: null },
 				uRes: { value: new THREE.Vector2(1, 1) },
 				uTime: { value: 0 },
-				uVignette: { value: 0.72 },
-				uGrain: { value: useBloom ? 0.022 : 0.016 },
-				uCA: { value: 0.0024 }
+				uVignette: { value: 0.78 },
+				uGrain: { value: useBloom ? 0.02 : 0.015 },
+				uCA: { value: 0.0018 }
 			}
 		})
 	);

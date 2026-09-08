@@ -216,9 +216,9 @@ bool diskCross(vec3 a, vec3 b, vec3 rayDir,
   turbDbg = plasma;
 
   float radialGain = mix(0.55, 1.05, innerHot) * mix(1.0, 0.72, outerSoft);
-  float I = flux*9.2*plasma*radialGain;
-  I += exp(-pow((qr-3.15)*2.4, 2.0))*3.4;                 // soft ISCO bloom
-  I += exp(-pow((qr-6.5)*0.55, 2.0))*0.55*clouds;         // mid-disk glow pockets
+  float I = flux*7.4*plasma*radialGain;
+  I += exp(-pow((qr-3.15)*2.4, 2.0))*1.8;                 // soft ISCO bloom
+  I += exp(-pow((qr-6.5)*0.55, 2.0))*0.35*clouds;         // mid-disk glow pockets
   float outerFade = 1.0 - smoothstep(uDout-16.0, uDout, qr);
   I *= outerFade;
 
@@ -227,16 +227,18 @@ bool diskCross(vec3 a, vec3 b, vec3 rayDir,
   float gamma = 1.0/sqrt(max(1.0 - beta*beta, 1e-4));
   vec3 tdir = normalize(vec3(-sin(ang), 0.0, cos(ang)))*uRotSign;
   float dop = 1.0/(gamma*(1.0 - dot(tdir*beta, rayDir)));
-  dop = clamp(dop, 0.50, uDopMax);
+  dop = clamp(dop, 0.55, uDopMax);
   float g = sqrt(max(1.0 - RS/qr, 0.0));
 
   float tShade = temp*dop*g;
   vec3 hot = blackbody(tShade);
   vec3 dust = cosmicDust(clouds);
   vec3 dcol = mix(hot, mix(hot, dust, 0.55), outerSoft*0.7);
-  dcol *= I * (dop*dop*dop) * g * uDiskBright;
+  // milder beaming so the approaching side keeps structure (not blown white)
+  float beam = mix(1.0, dop*dop, 0.72);
+  dcol *= I * beam * g * uDiskBright;
   // faint cool corona rim on the outer disk
-  dcol += dust * outerSoft * clouds * 0.35 * outerFade * uDiskBright;
+  dcol += dust * outerSoft * clouds * 0.22 * outerFade * uDiskBright;
 
   float alpha = mix(uOpFar*0.88, uOpNear, 1.0 - smoothstep(4.0, 14.0, qr)) * outerFade;
   alpha *= mix(0.9, 1.05, smoothstep(0.35, 0.8, plasma));
@@ -280,21 +282,19 @@ void main(){
 
     float dt = max(0.012, r*mix(0.02, 0.06, smoothstep(6.0, 20.0, r)));
 
-    // volumetric cosmic corona — thicker soft haze around the disk plane
+    // thin volumetric corona — keep structure visible on both sides
     float absY = abs(pos.y);
-    if(absY < 1.15 && r > uDin && r < uDout+2.0){
-      float sheet = exp(-absY*12.0);
-      float loft = exp(-absY*3.5)*0.35;
-      float dens = (sheet*0.045 + loft*0.02)*(1.0 - smoothstep(12.0, uDout+1.0, r));
+    if(absY < 0.55 && r > uDin && r < uDout){
+      float dens = exp(-absY*26.0)*0.022*(1.0 - smoothstep(10.0, uDout-1.0, r));
       float xh = max(r, 3.001);
       float fluxh = max(pow(xh/3.0, -3.0)*(1.0 - sqrt(3.0/xh)), 0.0);
       float angH = atan(pos.z, pos.x);
       float swirl = fbm(vec3(cos(angH)*1.2, sin(angH)*1.2, r*0.18 + uTime*0.05));
-      dens *= 0.7 + 0.6*swirl;
+      dens *= 0.75 + 0.4*swirl;
       vec3 glowc = blackbody(pow(fluxh*10.0, 0.25)*0.85);
       vec3 cool = cosmicDust(swirl);
-      vec3 haze = mix(glowc, cool, smoothstep(7.0, 18.0, r)*0.55);
-      haloCol += trans * haze * (fluxh*4.2 + 0.15) * dens * dt * uDiskBright;
+      vec3 haze = mix(glowc, cool, smoothstep(7.0, 18.0, r)*0.4);
+      haloCol += trans * haze * (fluxh*2.4) * dens * dt * uDiskBright;
     }
 
     if(r < 4.4){
@@ -338,9 +338,8 @@ void main(){
     col += haloCol * deep;
     bgAdd = trans * background(vel) * deep;
   }
-  // photon ring — soft critical curve feeding cinematic bloom
-  vec3 ringAdd = vec3(1.0,0.90,0.72) * exp(-pow((minR-1.55)*3.4, 2.0)) * 0.085;
-  ringAdd += vec3(0.75,0.55,1.05) * exp(-pow((minR-1.75)*2.2, 2.0)) * 0.025;
+  // photon ring — soft critical curve, kept modest so bloom doesn't blow out
+  vec3 ringAdd = vec3(1.0,0.90,0.72) * exp(-pow((minR-1.55)*3.6, 2.0)) * 0.045;
 
   vec3 outCol;
   if(uDebug == 1){                       // disk / halo only
@@ -416,7 +415,7 @@ void main(){
   col.b = texture2D(tDiffuse, uv - dir*ca).b;
 
   // manual ACES (renderer tone mapping stays OFF)
-  col *= 0.95;
+  col *= 0.82;
   col = aces(col);
 
   // aspect-aware vignette
