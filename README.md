@@ -1,36 +1,56 @@
-# Teja Narayana — Portfolio
+# sv
 
-Personal portfolio for **Teja Narayana**, Product Engineer working at the intersection of product, AI, and engineering.
+Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
 
-Built with **SvelteKit**, **Svelte 5**, and **Tailwind CSS v4**.
+## Creating a project
 
-## Run locally
+If you're seeing this, you've probably already done this step. Congrats!
 
-```bash
-npm install
-npm run dev
+```sh
+# create a new project
+npx sv create my-app
 ```
 
-Open [http://127.0.0.1:5173](http://127.0.0.1:5173) (Vite’s default port).
+To recreate this project with the same configuration:
 
-## Scripts
+```sh
+# recreate this project
+npx sv@1.1.1 create --template minimal --types ts --install npm ./
+```
 
-| Command           | Description                    |
-| ----------------- | ------------------------------ |
-| `npm run dev`     | Dev server on port **5173**    |
-| `npm run build`   | Production build               |
-| `npm run preview` | Preview build on port **4173** |
-| `npm run check`   | Typecheck with svelte-check    |
-| `npm run lint`    | Prettier + ESLint              |
-| `npm run format`  | Format with Prettier           |
+## Adding features
 
-## Stack
+Add features to your project with `sv add`:
 
-- SvelteKit + TypeScript
-- Tailwind CSS v4 (`@tailwindcss/vite`)
-- Typography plugin for long-form content hooks
-- [`threejs-components`](https://www.npmjs.com/package/threejs-components) `TubesCursor` (CC BY-NC-SA 4.0)
+```sh
+npx sv add
+```
 
-## Visual
+For example, to add Tailwind CSS:
 
-Black background with the FreeFrontend **Neon 3D Tubes Cursor Trail** mounted once in the root layout (every page inherits it). Move the pointer to draw glowing tubes; click to reshuffle colors.
+```sh
+npx sv add tailwindcss
+```
+
+## Developing
+
+Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+
+```sh
+npm run dev
+
+# or start the server and open the app in a new browser tab
+npm run dev -- --open
+```
+
+## Building
+
+To create a production version of your app:
+
+```sh
+npm run build
+```
+
+You can preview the production build with `npm run preview`.
+
+> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.

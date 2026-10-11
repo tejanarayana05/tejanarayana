@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+/* vscode-css-ignore */
+@theme {
+  --color-cream-bg: #E5E7EB;       /* Cool slate canvas */
+  --color-cream-sidebar: #FAFAFA;  /* Off-white sidebar */
+  --color-cream-card: #FFFFFF;     /* White resume card */
+  
+  --color-espresso: #1F2937;
+  --color-espresso-muted: #4B5563;
+  --color-espresso-light: #9CA3AF;
+
+  --color-hover-accent: #F3F4F6;  /* Soft grey hover highlight */
+}
+
+@layer base {
+  body {
+    background-color: #E5E7EB;
+    color: #1F2937;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+}
+
+.interactive-card {
+  transition: all 0.2s ease-in-out;
+}
+.interactive-card:hover {
+  background-color: #F3F4F6;
+  transform: translateY(-1px);
+}
