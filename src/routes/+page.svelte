@@ -301,7 +301,7 @@
             </h2>
 
             <span class="text-xs text-espresso-500 font-mono"
-              >2040 — Present</span
+              >2025 — Present</span
             >
           </div>
 
